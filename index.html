@@ -45,84 +45,54 @@
         }
         @keyframes colorCycle { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
-        /* --- RESTORED LIQUID GLASS BUBBLE --- */
-        .task-bubble {
-            position: relative;
-            padding: 12px 16px;
-            border-radius: 14px;
-            font-size: 11px;
-            font-weight: 700;
-            color: white;
-            cursor: grab;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: transform 0.2s, filter 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden; /* Clips the glass filter */
-        }
-
-        /* The "Liquid" Layer */
-        .task-bubble::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: -1;
-            backdrop-filter: blur(10px) url("#container-glass");
-            background-color: inherit; /* Takes the task color */
-            opacity: 0.85;
-        }
-
-        /* The "Glass Depth" Layer */
-        .task-bubble::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            box-shadow: 
-                inset 3px 3px 1px -2px rgba(255,255,255,0.4),
-                inset -2px -2px 2px -1px rgba(0,0,0,0.4),
-                0 4px 12px rgba(0,0,0,0.3);
-            border-radius: inherit;
-        }
-
-        .task-bubble span { z-index: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-
-        .delete-btn {
-            position: relative;
-            z-index: 2;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            font-size: 9px;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 10px;
-            transition: all 0.2s;
-        }
-        .delete-btn:hover { background: #f43f5e; transform: scale(1.1); }
-
         /* --- UI LAYOUT --- */
         header { height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(8, 12, 26, 0.4); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-subtle); z-index: 20; }
         #grid-container { flex: 1; display: flex; overflow-x: auto; padding: 0 10px; }
-        .hour-col { position: relative; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border-subtle); }
-        .col-header { padding: 15px 10px; font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .hour-col { position: relative; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border-subtle); min-width: 80px; }
+        .col-header { padding: 15px 10px; font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; pointer-events: none; }
+        
         .drop-zone { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 100px; }
         .drop-zone.drag-hover { background: rgba(99, 102, 241, 0.1); border-radius: 12px; }
 
+        /* --- RESIZE SLIDERS --- */
+        .resize-handle {
+            position: absolute; right: -5px; top: 0; width: 10px; height: 100%;
+            cursor: col-resize; z-index: 10; display: flex; align-items: center; justify-content: center;
+        }
+        .handle-bar { width: 2px; height: 30px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: background 0.2s; }
+        .resize-handle:hover .handle-bar { background: var(--accent-indigo); }
+
+        /* --- LIQUID GLASS BUBBLE --- */
+        .task-bubble {
+            position: relative; padding: 12px 16px; border-radius: 14px;
+            font-size: 11px; font-weight: 700; color: white; cursor: grab;
+            user-select: none; display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;
+        }
+        .task-bubble::before {
+            content: ""; position: absolute; inset: 0; z-index: -1;
+            backdrop-filter: blur(10px) url("#container-glass");
+            background-color: inherit; opacity: 0.85;
+        }
+        .task-bubble::after {
+            content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+            box-shadow: inset 3px 3px 1px -2px rgba(255,255,255,0.4), inset -2px -2px 2px -1px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+            border-radius: inherit;
+        }
+        .task-bubble span { z-index: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .delete-btn {
+            position: relative; z-index: 2; background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 9px;
+            width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; margin-left: 10px;
+        }
+
+        /* --- FOOTER --- */
         footer { height: 100px; background: var(--panel-bg); backdrop-filter: blur(30px); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; padding: 0 30px; gap: 20px; z-index: 20; }
         #dock-items { display: flex; gap: 15px; overflow-x: auto; flex: 1; align-items: center; }
-
-        .btn-add { background: rgba(255,255,255,0.05); border: 1px dashed var(--text-muted); color: var(--text-muted); padding: 10px 24px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .btn-add:hover { border-color: white; color: white; }
-
+        
+        .btn-add { background: rgba(255,255,255,0.05); border: 1px dashed var(--text-muted); color: var(--text-muted); padding: 10px 24px; border-radius: 50px; font-weight: 700; cursor: pointer; }
         .input-pill { background: #0d1528; border: 1px solid var(--border-panel); border-radius: 12px; padding: 10px 15px; display: flex; gap: 10px; align-items: center; }
         .input-pill input { background: transparent; border: none; outline: none; color: white; width: 140px; font-family: inherit; }
     </style>
@@ -131,10 +101,7 @@
 
 <svg class="hidden" style="position: absolute; width: 0; height: 0;">
     <defs>
-        <filter id="container-glass">
-            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" result="noise"/>
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G"/>
-        </filter>
+        <filter id="container-glass"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G"/></filter>
     </defs>
 </svg>
 
@@ -143,3 +110,152 @@
 <header>
     <div style="font-weight: 800; font-size: 18px; letter-spacing: -1px;">TIMEBLOCK</div>
     <div id="stats" style="font-size: 10px; font-weight: 800; opacity: 0.6;">0 / 0 PLACED</div>
+</header>
+
+<main id="grid-container"></main>
+
+<footer>
+    <div id="dock-items"></div>
+</footer>
+
+<script>
+    const COLORS = [{bg:'rgba(99,102,241,0.5)'}, {bg:'rgba(168,85,247,0.5)'}, {bg:'rgba(236,72,153,0.5)'}, {bg:'rgba(16,185,129,0.5)'}];
+    
+    let state = {
+        widths: Array(24).fill(160),
+        tasks: [],
+        isEditing: false
+    };
+
+    function save() {
+        localStorage.setItem('TIMEBLOCK_FINAL_STATE', JSON.stringify({
+            tasks: state.tasks,
+            widths: state.widths,
+            date: new Date().toDateString()
+        }));
+    }
+
+    function load() {
+        const raw = localStorage.getItem('TIMEBLOCK_FINAL_STATE');
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (data.date === new Date().toDateString()) state.tasks = data.tasks || [];
+            if (data.widths) state.widths = data.widths;
+        }
+    }
+
+    function initGrid() {
+        const container = document.getElementById('grid-container');
+        container.innerHTML = '';
+        for (let i = 0; i < 24; i++) {
+            const col = document.createElement('div');
+            col.className = 'hour-col';
+            col.id = `col-${i}`;
+            col.style.width = `${state.widths[i]}px`;
+            
+            const h = i === 0 ? '12 AM' : (i < 12 ? i + ' AM' : (i === 12 ? '12 PM' : (i-12) + ' PM'));
+            col.innerHTML = `<div class="col-header">${h}</div>`;
+            
+            const dz = document.createElement('div');
+            dz.className = 'drop-zone';
+            dz.dataset.hour = i;
+            dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('drag-hover'); };
+            dz.ondragleave = () => dz.classList.remove('drag-hover');
+            dz.ondrop = (e) => {
+                e.preventDefault();
+                dz.classList.remove('drag-hover');
+                const id = e.dataTransfer.getData('text/plain');
+                const t = state.tasks.find(x => x.id === id);
+                if (t) { t.hour = i; syncUI(); }
+            };
+            col.appendChild(dz);
+
+            if (i < 23) {
+                const rs = document.createElement('div');
+                rs.className = 'resize-handle';
+                rs.innerHTML = '<div class="handle-bar"></div>';
+                rs.onmousedown = (e) => setupResize(e, i);
+                col.appendChild(rs);
+            }
+            container.appendChild(col);
+        }
+    }
+
+    function syncUI() {
+        document.querySelectorAll('.drop-zone').forEach(dz => dz.innerHTML = '');
+        const dock = document.getElementById('dock-items');
+        dock.innerHTML = '';
+
+        state.tasks.forEach(t => {
+            const el = document.createElement('div');
+            el.className = 'task-bubble';
+            el.style.backgroundColor = t.color.bg;
+            el.draggable = true;
+            el.innerHTML = `<span>${t.name}</span>`;
+            
+            const del = document.createElement('button');
+            del.className = 'delete-btn';
+            del.innerHTML = '✕';
+            del.onclick = (e) => { e.stopPropagation(); state.tasks = state.tasks.filter(x => x.id !== t.id); syncUI(); };
+            el.appendChild(del);
+
+            el.ondragstart = (e) => { e.dataTransfer.setData('text/plain', t.id); el.style.opacity = '0.3'; };
+            el.ondragend = () => el.style.opacity = '1';
+
+            if (t.hour !== null) {
+                const zone = document.querySelector(`.drop-zone[data-hour="${t.hour}"]`);
+                if (zone) zone.appendChild(el);
+            } else {
+                dock.appendChild(el);
+            }
+        });
+
+        if (state.isEditing) {
+            const p = document.createElement('div');
+            p.className = 'input-pill';
+            p.innerHTML = `<input id="task-name" placeholder="Task Name..."><button id="add-now" style="background:var(--accent-indigo); border:none; color:white; padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:800; font-size:10px;">ADD</button>`;
+            dock.appendChild(p);
+            const input = document.getElementById('task-name');
+            input.focus();
+            input.onkeydown = (e) => { if(e.key === 'Enter') confirmTask(); };
+            document.getElementById('add-now').onclick = confirmTask;
+        } else {
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn-add';
+            addBtn.innerText = '+ NEW TASK';
+            addBtn.onclick = () => { state.isEditing = true; syncUI(); };
+            dock.appendChild(addBtn);
+        }
+        document.getElementById('stats').innerText = `${state.tasks.filter(t => t.hour !== null).length} / ${state.tasks.length} PLACED`;
+        save();
+    }
+
+    function confirmTask() {
+        const val = document.getElementById('task-name').value;
+        if (!val) return;
+        state.tasks.push({ id: 'id-' + Date.now(), name: val, hour: null, color: COLORS[state.tasks.length % COLORS.length] });
+        state.isEditing = false;
+        syncUI();
+    }
+
+    function setupResize(e, index) {
+        const startX = e.clientX;
+        const w0 = state.widths[index], w1 = state.widths[index+1], total = w0 + w1;
+        const onMove = (me) => {
+            const dx = me.clientX - startX;
+            const nw0 = Math.max(80, Math.min(total - 80, w0 + dx));
+            state.widths[index] = nw0; state.widths[index+1] = total - nw0;
+            document.getElementById(`col-${index}`).style.width = nw0 + 'px';
+            document.getElementById(`col-${index+1}`).style.width = (total - nw0) + 'px';
+            save();
+        };
+        const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    }
+
+    load();
+    initGrid();
+    syncUI();
+</script>
+</body>
+</html>
