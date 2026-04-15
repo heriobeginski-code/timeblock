@@ -11,6 +11,7 @@
             --accent: #6366f1;
             --text: #e2e8f0;
             --border: #0f172a;
+            --panel: #0c1222;
         }
         * { box-sizing: border-box; }
         body { 
@@ -18,88 +19,104 @@
             color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
         }
 
-        /* Header & Dock Styles */
-        header { height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-        footer { height: 80px; background: rgba(8,12,26,0.95); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; }
+        header { height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: var(--bg-deep); z-index: 10; }
+        footer { height: 80px; background: rgba(8,12,26,0.98); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; z-index: 10; }
         
-        /* Grid Layout */
-        #grid-container { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; }
-        .hour-col { position: relative; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); height: 100%; transition: background 0.2s; }
-        .col-header { padding: 8px 10px; font-size: 11px; pointer-events: none; }
+        #grid-container { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; background: var(--bg-deep); }
+        .hour-col { position: relative; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); height: 100%; }
+        .col-header { padding: 12px 10px; font-size: 11px; font-weight: 600; color: #4a6080; background: rgba(8,12,26,0.5); }
         
-        /* Drop Zone Logic */
-        .drop-zone { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        /* Prevent child elements from stealing the drag event */
-        .drop-zone * { pointer-events: none; } 
-        .drop-zone.drag-hover { background: rgba(99, 102, 241, 0.1); border: 2px dashed var(--accent); }
+        /* Drop Zone */
+        .drop-zone { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; transition: background 0.2s; }
+        .drop-zone.drag-hover { background: rgba(99, 102, 241, 0.1); outline: 2px dashed var(--accent); outline-offset: -4px; }
 
-        /* Bubbles */
+        /* Bubbles - Now fully draggable everywhere */
         .task-bubble { 
-            padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; 
-            cursor: pointer; pointer-events: auto !important; 
+            padding: 10px 14px; border-radius: 10px; font-size: 11px; font-weight: 700; 
+            cursor: grab; transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none; color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .dock-bubble { 
-            padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 700; 
-            cursor: grab; white-space: nowrap; 
-        }
-        .dragging { opacity: 0.3; }
+        .task-bubble:active { cursor: grabbing; }
+        .task-bubble.dragging { opacity: 0.2; transform: scale(0.95); }
+
+        /* Custom Drag Image styling (visual only) */
+        .dock-bubble { border-radius: 100px; white-space: nowrap; }
 
         /* Resize Handle */
-        .resize-handle { 
-            position: absolute; right: -5px; top: 0; width: 10px; height: 100%; 
-            cursor: col-resize; z-index: 10; display: flex; align-items: center; justify-content: center; 
-        }
-        .handle-bar { width: 2px; height: 40px; background: #1e2a4a; border-radius: 2px; }
-        .resize-handle:hover .handle-bar { background: var(--accent); width: 4px; }
+        .resize-handle { position: absolute; right: -5px; top: 0; width: 10px; height: 100%; cursor: col-resize; z-index: 5; display: flex; align-items: center; justify-content: center; }
+        .handle-bar { width: 2px; height: 40px; background: #1e2a4a; border-radius: 2px; transition: all 0.2s; }
+        .resize-handle:hover .handle-bar { background: var(--accent); height: 60px; width: 4px; box-shadow: 0 0 10px var(--accent); }
 
-        #dock-items { display: flex; gap: 12px; overflow-x: auto; align-items: center; flex: 1; }
-        .btn-add { border: 2px dashed #1e2a4a; background: transparent; color: #4a6080; padding: 8px 16px; border-radius: 100px; cursor: pointer; font-family: inherit; }
+        #dock-items { display: flex; gap: 12px; overflow-x: auto; align-items: center; flex: 1; height: 100%; }
+        .btn-add { border: 2px dashed #1e2a4a; background: transparent; color: #4a6080; padding: 10px 20px; border-radius: 100px; cursor: pointer; font-family: inherit; font-weight: 700; transition: all 0.2s; }
+        .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: #1e2a4a; border-radius: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="font-weight: 800; font-size: 18px;">⏱ TimeBlock</div>
-    <div id="stats" style="font-size: 11px; color: #4a6080;">0 Tasks</div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 8px; display: flex; align-items: center; justify-content: center;">⏱</div>
+        <div style="font-weight: 800; font-size: 17px; letter-spacing: -0.5px;">TimeBlock</div>
+    </div>
+    <div id="stats" style="font-size: 11px; font-weight: 700; color: #4a6080; background: #0f172a; padding: 5px 15px; border-radius: 100px; border: 1px solid #1e2a4a;">0 Tasks</div>
 </header>
 
-<main id="grid-container"></main>
+<main id="grid-container" ondragover="event.preventDefault();" ondrop="handleGlobalDrop(event)">
+    </main>
 
 <footer>
-    <div style="font-size: 9px; letter-spacing: 1px; color: #1e3050; font-weight: 800;">TASKS</div>
-    <div id="dock-items"></div>
+    <div style="font-size: 9px; letter-spacing: 2px; color: #1e3050; font-weight: 800;">TASKS</div>
+    <div id="dock-items" ondragover="event.preventDefault();" ondrop="dropToDock(event)">
+        </div>
     <button class="btn-add" onclick="createNewTask()">+ New Task</button>
 </footer>
 
 <script>
     const state = {
-        widths: Array(24).fill(120),
+        widths: Array(24).fill(130),
         tasks: [],
         draggingId: null
     };
 
-    const COLORS = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#a855f7'];
+    const COLORS = [
+        {bg: '#f43f5e', glow: 'rgba(244, 63, 94, 0.4)'},
+        {bg: '#3b82f6', glow: 'rgba(59, 130, 246, 0.4)'},
+        {bg: '#10b981', glow: 'rgba(16, 185, 129, 0.4)'},
+        {bg: '#f59e0b', glow: 'rgba(245, 158, 11, 0.4)'},
+        {bg: '#a855f7', glow: 'rgba(168, 85, 247, 0.4)'}
+    ];
 
-    // 1. INITIALIZE THE GRID ONCE (Persistent DOM)
     function initGrid() {
         const container = document.getElementById('grid-container');
+        container.innerHTML = '';
         for (let i = 0; i < 24; i++) {
             const col = document.createElement('div');
             col.className = 'hour-col';
             col.id = `col-${i}`;
             col.style.width = `${state.widths[i]}px`;
 
-            const label = i === 0 ? '12 AM' : (i < 12 ? i + ' AM' : (i === 12 ? '12 PM' : (i-12) + ' PM'));
-            col.innerHTML = `<div class="col-header">${label}</div>`;
+            const hDisplay = i === 0 ? '12 AM' : (i < 12 ? i + ' AM' : (i === 12 ? '12 PM' : (i-12) + ' PM'));
+            col.innerHTML = `<div class="col-header">${hDisplay}</div>`;
 
             const dz = document.createElement('div');
             dz.className = 'drop-zone';
             dz.dataset.hour = i;
 
-            // Drag Events
-            dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('drag-hover'); };
+            dz.ondragover = (e) => {
+                e.preventDefault();
+                dz.classList.add('drag-hover');
+            };
             dz.ondragleave = () => dz.classList.remove('drag-hover');
             dz.ondrop = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 dz.classList.remove('drag-hover');
                 const taskId = e.dataTransfer.getData('text/plain');
                 moveTask(taskId, i);
@@ -114,14 +131,12 @@
                 handle.onmousedown = (e) => initResize(e, i);
                 col.appendChild(handle);
             }
-
             container.appendChild(col);
         }
     }
 
-    // 2. TARGETED TASK RENDERING (Doesn't touch the columns)
     function syncTasks() {
-        // Clear all drop zones and dock
+        // Clear all zones
         document.querySelectorAll('.drop-zone').forEach(dz => dz.innerHTML = '');
         const dock = document.getElementById('dock-items');
         dock.innerHTML = '';
@@ -129,23 +144,29 @@
         state.tasks.forEach(task => {
             const el = document.createElement('div');
             el.innerText = task.name;
-            el.style.backgroundColor = task.color;
+            el.className = 'task-bubble';
+            el.style.backgroundColor = task.color.bg;
+            el.style.boxShadow = `0 4px 15px ${task.color.glow}`;
+            el.draggable = true;
+
+            // Unified Drag Logic
+            el.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', task.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => el.classList.add('dragging'), 0);
+            };
+            el.ondragend = () => el.classList.remove('dragging');
 
             if (task.hour !== null) {
-                el.className = 'task-bubble';
                 document.querySelector(`.drop-zone[data-hour="${task.hour}"]`).appendChild(el);
             } else {
-                el.className = 'dock-bubble';
-                el.draggable = true;
-                el.ondragstart = (e) => {
-                    e.dataTransfer.setData('text/plain', task.id);
-                    setTimeout(() => el.classList.add('dragging'), 0);
-                };
-                el.ondragend = () => el.classList.remove('dragging');
+                el.classList.add('dock-bubble');
                 dock.appendChild(el);
             }
         });
-        document.getElementById('stats').innerText = `${state.tasks.length} Tasks Created`;
+        
+        const placed = state.tasks.filter(t => t.hour !== null).length;
+        document.getElementById('stats').innerText = `${placed} / ${state.tasks.length} Placed`;
     }
 
     function moveTask(id, hour) {
@@ -156,11 +177,22 @@
         }
     }
 
+    function dropToDock(e) {
+        e.preventDefault();
+        const taskId = e.dataTransfer.getData('text/plain');
+        moveTask(taskId, null);
+    }
+
+    // Prevents issues if dropping on the cracks between columns
+    function handleGlobalDrop(e) {
+        e.preventDefault();
+    }
+
     function createNewTask() {
-        const name = prompt("Task Name?");
+        const name = prompt("Enter task name:");
         if (!name) return;
         state.tasks.push({
-            id: Date.now(),
+            id: 'task-' + Date.now(),
             name: name,
             hour: null,
             color: COLORS[state.tasks.length % COLORS.length]
@@ -176,7 +208,7 @@
 
         const onMouseMove = (moveE) => {
             const delta = moveE.clientX - startX;
-            const newL = Math.max(70, Math.min(total - 70, startWidthL + delta));
+            const newL = Math.max(75, Math.min(total - 75, startWidthL + delta));
             const newR = total - newL;
 
             state.widths[index] = newL;
@@ -196,6 +228,9 @@
     }
 
     initGrid();
+    // Start with a dummy task for testing
+    state.tasks.push({ id: 'demo', name: 'Drag me!', hour: null, color: COLORS[0] });
+    syncTasks();
 </script>
 </body>
 </html>
