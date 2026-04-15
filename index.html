@@ -4,437 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TimeBlock | Mission Control</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-deep: #080c1a;
-            --panel-bg: rgba(8, 12, 26, 0.97);
-            --accent-indigo: #6366f1;
-            --accent-purple: #a855f7;
-            --text-primary: #e2e8f0;
-            --text-muted: #4a6080;
-            --text-faint: #334155;
-            --border-subtle: #0f172a;
-            --border-panel: #1e2a4a;
-            --scrollbar-track: #0c1022;
-            --scrollbar-thumb: #1e2a4a;
+            --accent: #6366f1;
+            --text: #e2e8f0;
+            --border: #0f172a;
         }
-
         * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Sora', sans-serif;
-            background-color: var(--bg-deep);
-            color: var(--text-primary);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            user-select: none;
+        body { 
+            margin: 0; font-family: 'Sora', sans-serif; background: var(--bg-deep); 
+            color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
         }
 
-        /* --- Animations --- */
-        @keyframes popIn {
-            0% { transform: scale(0.7); opacity: 0; }
-            70% { transform: scale(1.08); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulseRing {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
-            50% { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
-        }
+        /* Header & Dock Styles */
+        header { height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+        footer { height: 80px; background: rgba(8,12,26,0.95); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; }
+        
+        /* Grid Layout */
+        #grid-container { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; }
+        .hour-col { position: relative; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); height: 100%; transition: background 0.2s; }
+        .col-header { padding: 8px 10px; font-size: 11px; pointer-events: none; }
+        
+        /* Drop Zone Logic */
+        .drop-zone { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        /* Prevent child elements from stealing the drag event */
+        .drop-zone * { pointer-events: none; } 
+        .drop-zone.drag-hover { background: rgba(99, 102, 241, 0.1); border: 2px dashed var(--accent); }
 
-        /* --- Scrollbar --- */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
-
-        header {
-            height: 60px;
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border-subtle);
-            flex-shrink: 0;
-            z-index: 30;
+        /* Bubbles */
+        .task-bubble { 
+            padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; 
+            cursor: pointer; pointer-events: auto !important; 
         }
-
-        .logo-area { display: flex; align-items: center; gap: 12px; }
-        .logo-box {
-            width: 38px;
-            height: 38px;
-            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple), #ec4899);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+        .dock-bubble { 
+            padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 700; 
+            cursor: grab; white-space: nowrap; 
         }
-        .title-group h1 { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.1; }
-        .title-group p { margin: 0; font-size: 10px; color: var(--text-faint); font-weight: 600; }
+        .dragging { opacity: 0.3; }
 
-        .stat-badge {
-            background: #0f172a;
-            border: 1px solid var(--border-panel);
-            border-radius: 100px;
-            padding: 5px 14px;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-muted);
+        /* Resize Handle */
+        .resize-handle { 
+            position: absolute; right: -5px; top: 0; width: 10px; height: 100%; 
+            cursor: col-resize; z-index: 10; display: flex; align-items: center; justify-content: center; 
         }
+        .handle-bar { width: 2px; height: 40px; background: #1e2a4a; border-radius: 2px; }
+        .resize-handle:hover .handle-bar { background: var(--accent); width: 4px; }
 
-        #grid-container {
-            flex: 1;
-            display: flex;
-            overflow-x: auto;
-            overflow-y: hidden;
-            background-color: var(--bg-deep);
-        }
-
-        .hour-col {
-            position: relative;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border-subtle);
-            height: 100%;
-        }
-
-        .col-header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: rgba(8, 12, 26, 0.9);
-            backdrop-filter: blur(4px);
-            padding: 8px 10px 6px;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .period-emoji { font-size: 12px; display: block; margin-bottom: 2px; }
-        .hour-label { font-size: 11px; font-weight: 600; }
-
-        .drop-zone {
-            flex: 1;
-            padding: 6px 5px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            transition: background 0.2s;
-            border: 2px solid transparent;
-        }
-        .drop-zone.drag-over {
-            background: rgba(99, 102, 241, 0.12);
-            border: 2px dashed var(--accent-indigo);
-        }
-
-        .resize-handle {
-            position: absolute;
-            right: -5px;
-            top: 0;
-            width: 10px;
-            height: 100%;
-            cursor: col-resize;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .resize-bar { width: 2px; height: 36px; background: var(--border-panel); border-radius: 3px; }
-        .resize-handle:hover .resize-bar { width: 4px; height: 56px; background: var(--accent-indigo); }
-
-        .task-bubble {
-            border-radius: 8px;
-            padding: 6px 8px;
-            font-size: 10px;
-            font-weight: 700;
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-        }
-
-        .dock-bubble {
-            border-radius: 100px;
-            padding: 9px 20px;
-            font-size: 13px;
-            font-weight: 700;
-            color: white;
-            cursor: grab;
-            flex-shrink: 0;
-            animation: popIn 0.3s ease;
-        }
-
-        .drop-indicator {
-            border: 2px dashed var(--accent-indigo);
-            border-radius: 8px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-indigo);
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        footer {
-            height: 80px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border-subtle);
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-shrink: 0;
-            z-index: 30;
-        }
-        .dock-label { font-size: 9px; letter-spacing: 2px; color: #1e3050; font-weight: 800; text-transform: uppercase; }
-        #dock-items { display: flex; align-items: center; gap: 12px; overflow-x: auto; flex: 1; padding: 10px 0; }
-
-        .btn-new-task {
-            border: 2px dashed #1e2a4a;
-            border-radius: 100px;
-            padding: 8px 18px;
-            background: transparent;
-            color: #3d4f72;
-            font-weight: 700;
-            cursor: pointer;
-            animation: pulseRing 3s infinite;
-        }
-
-        .input-pill {
-            background: #0d1528;
-            border: 1px solid var(--border-panel);
-            border-radius: 16px;
-            padding: 8px 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: fadeUp 0.25s ease;
-        }
-        .input-fields input { background: transparent; border: none; outline: none; color: #cbd5e1; font-size: 13px; width: 140px; font-family: inherit; }
-        .swatch-group { display: flex; gap: 6px; }
-        .swatch { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; }
-        .swatch.active { outline: 2px solid white; transform: scale(1.25); }
-
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(10px); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal-card { background: #0c1222; border: 1px solid #1a2540; border-radius: 22px; padding: 28px; width: 340px; animation: fadeUp 0.25s ease; }
-        .modal-icon { width: 52px; height: 52px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 16px; }
-        .note-block { background: #080f1e; border: 1px solid #1a2540; border-radius: 12px; padding: 12px; font-size: 13px; color: #94a3b8; margin: 16px 0; }
-        .modal-btns { display: flex; gap: 10px; }
-        .btn-modal { flex: 1; padding: 11px; border-radius: 13px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; }
+        #dock-items { display: flex; gap: 12px; overflow-x: auto; align-items: center; flex: 1; }
+        .btn-add { border: 2px dashed #1e2a4a; background: transparent; color: #4a6080; padding: 8px 16px; border-radius: 100px; cursor: pointer; font-family: inherit; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo-area">
-            <div class="logo-box">⏱</div>
-            <div class="title-group">
-                <h1>TimeBlock</h1>
-                <p>Resize columns · Drag tasks · Plan your day</p>
-            </div>
-        </div>
-        <div id="stat-pill" class="stat-badge">0 / 0 placed</div>
-    </header>
+<header>
+    <div style="font-weight: 800; font-size: 18px;">⏱ TimeBlock</div>
+    <div id="stats" style="font-size: 11px; color: #4a6080;">0 Tasks</div>
+</header>
 
-    <main id="grid-container"></main>
+<main id="grid-container"></main>
 
-    <footer>
-        <div class="dock-label">Tasks</div>
-        <div id="dock-items"></div>
-    </footer>
+<footer>
+    <div style="font-size: 9px; letter-spacing: 1px; color: #1e3050; font-weight: 800;">TASKS</div>
+    <div id="dock-items"></div>
+    <button class="btn-add" onclick="createNewTask()">+ New Task</button>
+</footer>
 
-    <div id="modal-container"></div>
+<script>
+    const state = {
+        widths: Array(24).fill(120),
+        tasks: [],
+        draggingId: null
+    };
 
-    <script>
-        const COLORS = [
-            { bg: '#f43f5e', glow: '#f43f5e55' }, { bg: '#f59e0b', glow: '#f59e0b55' },
-            { bg: '#10b981', glow: '#10b98155' }, { bg: '#3b82f6', glow: '#3b82f655' },
-            { bg: '#a855f7', glow: '#a855f755' }, { bg: '#ec4899', glow: '#ec489955' },
-            { bg: '#14b8a6', glow: '#14b8a655' }, { bg: '#f97316', glow: '#f9731655' },
-            { bg: '#6366f1', glow: '#6366f155' }, { bg: '#84cc16', glow: '#84cc1655' }
-        ];
+    const COLORS = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#a855f7'];
 
-        let state = {
-            widths: Array(24).fill(112),
-            tasks: [],
-            isEditing: false,
-            editName: '',
-            editNote: '',
-            activeColorIdx: 0,
-            draggingId: null,
-            dropHour: null,
-            activeModalTask: null
+    // 1. INITIALIZE THE GRID ONCE (Persistent DOM)
+    function initGrid() {
+        const container = document.getElementById('grid-container');
+        for (let i = 0; i < 24; i++) {
+            const col = document.createElement('div');
+            col.className = 'hour-col';
+            col.id = `col-${i}`;
+            col.style.width = `${state.widths[i]}px`;
+
+            const label = i === 0 ? '12 AM' : (i < 12 ? i + ' AM' : (i === 12 ? '12 PM' : (i-12) + ' PM'));
+            col.innerHTML = `<div class="col-header">${label}</div>`;
+
+            const dz = document.createElement('div');
+            dz.className = 'drop-zone';
+            dz.dataset.hour = i;
+
+            // Drag Events
+            dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('drag-hover'); };
+            dz.ondragleave = () => dz.classList.remove('drag-hover');
+            dz.ondrop = (e) => {
+                dz.classList.remove('drag-hover');
+                const taskId = e.dataTransfer.getData('text/plain');
+                moveTask(taskId, i);
+            };
+
+            col.appendChild(dz);
+
+            if (i < 23) {
+                const handle = document.createElement('div');
+                handle.className = 'resize-handle';
+                handle.innerHTML = '<div class="handle-bar"></div>';
+                handle.onmousedown = (e) => initResize(e, i);
+                col.appendChild(handle);
+            }
+
+            container.appendChild(col);
+        }
+    }
+
+    // 2. TARGETED TASK RENDERING (Doesn't touch the columns)
+    function syncTasks() {
+        // Clear all drop zones and dock
+        document.querySelectorAll('.drop-zone').forEach(dz => dz.innerHTML = '');
+        const dock = document.getElementById('dock-items');
+        dock.innerHTML = '';
+
+        state.tasks.forEach(task => {
+            const el = document.createElement('div');
+            el.innerText = task.name;
+            el.style.backgroundColor = task.color;
+
+            if (task.hour !== null) {
+                el.className = 'task-bubble';
+                document.querySelector(`.drop-zone[data-hour="${task.hour}"]`).appendChild(el);
+            } else {
+                el.className = 'dock-bubble';
+                el.draggable = true;
+                el.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', task.id);
+                    setTimeout(() => el.classList.add('dragging'), 0);
+                };
+                el.ondragend = () => el.classList.remove('dragging');
+                dock.appendChild(el);
+            }
+        });
+        document.getElementById('stats').innerText = `${state.tasks.length} Tasks Created`;
+    }
+
+    function moveTask(id, hour) {
+        const task = state.tasks.find(t => t.id == id);
+        if (task) {
+            task.hour = hour;
+            syncTasks();
+        }
+    }
+
+    function createNewTask() {
+        const name = prompt("Task Name?");
+        if (!name) return;
+        state.tasks.push({
+            id: Date.now(),
+            name: name,
+            hour: null,
+            color: COLORS[state.tasks.length % COLORS.length]
+        });
+        syncTasks();
+    }
+
+    function initResize(e, index) {
+        const startX = e.clientX;
+        const startWidthL = state.widths[index];
+        const startWidthR = state.widths[index+1];
+        const total = startWidthL + startWidthR;
+
+        const onMouseMove = (moveE) => {
+            const delta = moveE.clientX - startX;
+            const newL = Math.max(70, Math.min(total - 70, startWidthL + delta));
+            const newR = total - newL;
+
+            state.widths[index] = newL;
+            state.widths[index+1] = newR;
+
+            document.getElementById(`col-${index}`).style.width = `${newL}px`;
+            document.getElementById(`col-${index+1}`).style.width = `${newR}px`;
         };
 
-        const $ = (id) => document.getElementById(id);
+        const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
 
-        function render() {
-            const grid = $('grid-container');
-            const dock = $('dock-items');
-            
-            $('stat-pill').innerText = `${state.tasks.filter(t => t.hour !== null).length} / ${state.tasks.length} placed`;
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    }
 
-            grid.innerHTML = '';
-            state.widths.forEach((w, i) => {
-                const col = document.createElement('div');
-                col.className = 'hour-col';
-                col.style.width = w + 'px';
-                
-                const label = i === 0 ? '12 AM' : (i < 12 ? i + ' AM' : (i === 12 ? '12 PM' : (i-12) + ' PM'));
-                const emoji = i <= 5 ? '🌙' : (i <= 11 ? '🌤' : (i <= 17 ? '☀️' : '🌆'));
-
-                col.innerHTML = `
-                    <div class="col-header">
-                        <span class="period-emoji">${emoji}</span>
-                        <span class="hour-label">${label}</span>
-                    </div>
-                `;
-
-                const dz = document.createElement('div');
-                dz.className = 'drop-zone' + (state.dropHour === i ? ' drag-over' : '');
-                
-                state.tasks.filter(t => t.hour === i).forEach(t => {
-                    const b = document.createElement('div');
-                    b.className = 'task-bubble';
-                    b.style.backgroundColor = t.color.bg;
-                    b.innerText = t.name;
-                    b.onclick = () => { state.activeModalTask = t; render(); };
-                    dz.appendChild(b);
-                });
-
-                if (state.dropHour === i && state.draggingId) {
-                    const ind = document.createElement('div');
-                    ind.className = 'drop-indicator';
-                    ind.innerText = 'drop';
-                    dz.appendChild(ind);
-                }
-
-                dz.ondragover = (e) => { e.preventDefault(); if(state.dropHour !== i) { state.dropHour = i; render(); }};
-                dz.ondragleave = (e) => { if(!dz.contains(e.relatedTarget)) { state.dropHour = null; render(); }};
-                dz.ondrop = () => { 
-                    const t = state.tasks.find(x => x.id === state.draggingId);
-                    if(t) t.hour = i;
-                    state.draggingId = null; state.dropHour = null; render();
-                };
-
-                col.appendChild(dz);
-                if(i < 23) {
-                    const h = document.createElement('div');
-                    h.className = 'resize-handle';
-                    h.innerHTML = '<div class="resize-bar"></div>';
-                    h.onmousedown = (e) => {
-                        const startX = e.clientX;
-                        const w0 = state.widths[i];
-                        const w1 = state.widths[i+1];
-                        const onMove = (me) => {
-                            const dx = me.clientX - startX;
-                            const nw = Math.max(72, Math.min(w0+w1-72, w0+dx));
-                            state.widths[i] = nw;
-                            state.widths[i+1] = (w0+w1) - nw;
-                            render();
-                        };
-                        const onUp = () => { 
-                            document.removeEventListener('mousemove', onMove);
-                            document.removeEventListener('mouseup', onUp);
-                        };
-                        document.addEventListener('mousemove', onMove);
-                        document.addEventListener('mouseup', onUp);
-                    };
-                    col.appendChild(h);
-                }
-                grid.appendChild(col);
-            });
-
-            dock.innerHTML = '';
-            state.tasks.filter(t => t.hour === null).forEach(t => {
-                const b = document.createElement('div');
-                b.className = 'dock-bubble';
-                b.draggable = true;
-                b.innerText = t.name;
-                b.style.backgroundColor = t.color.bg;
-                b.style.boxShadow = '0 4px 12px ' + t.color.glow;
-                b.ondragstart = (e) => { 
-                    state.draggingId = t.id;
-                    setTimeout(() => b.style.opacity = '0.3', 0);
-                };
-                b.ondragend = () => { b.style.opacity = '1'; state.draggingId = null; render(); };
-                dock.appendChild(b);
-            });
-
-            if(state.isEditing) {
-                const p = document.createElement('div');
-                p.className = 'input-pill';
-                p.innerHTML = `
-                    <div class="input-fields">
-                        <input id="tin" placeholder="Task..." value="${state.editName}">
-                        <input id="nin" placeholder="Note..." value="${state.editNote}" style="font-size:11px;opacity:0.6">
-                    </div>
-                    <div class="swatch-group">
-                        ${COLORS.map((c,idx) => `<div class="swatch ${state.activeColorIdx===idx?'active':''}" style="background:${c.bg}" onclick="state.activeColorIdx=${idx};render()"></div>`).join('')}
-                    </div>
-                    <button class="btn-modal" style="background:var(--accent-indigo);color:white;width:auto" onclick="addTask()">Add</button>
-                `;
-                dock.appendChild(p);
-                const tin = $('tin'); tin.focus();
-                tin.oninput = (e) => state.editName = e.target.value;
-                $('nin').oninput = (e) => state.editNote = e.target.value;
-            } else {
-                const btn = document.createElement('button');
-                btn.className = 'btn-new-task';
-                btn.innerText = '+ New task';
-                btn.onclick = () => { state.isEditing = true; render(); };
-                dock.appendChild(btn);
-            }
-
-            const mc = $('modal-container'); mc.innerHTML = '';
-            if(state.activeModalTask) {
-                const t = state.activeModalTask;
-                const ov = document.createElement('div');
-                ov.className = 'modal-overlay';
-                ov.onclick = () => { state.activeModalTask = null; render(); };
-                ov.innerHTML = `
-                    <div class="modal-card" onclick="event.stopPropagation()">
-                        <div class="modal-icon" style="background:${t.color.bg}">📌</div>
-                        <h2>${t.name}</h2>
-                        ${t.note ? `<div class="note-block">${t.note}</div>` : ''}
-                        <div class="modal-btns">
-                            <button class="btn-modal" style="background:#131c35;color:#64748b" onclick="toDock('${t.id}')">Dock</button>
-                            <button class="btn-modal" style="background:var(--accent-indigo);color:white" onclick="state.activeModalTask=null;render()">Done</button>
-                        </div>
-                    </div>
-                `;
-                mc.appendChild(ov);
-            }
-        }
-
-        function addTask() {
-            if(!state.editName) return;
-            state.tasks.push({ id:Date.now(), name:state.editName, note:state.editNote, color:COLORS[state.activeColorIdx], hour:null });
-            state.editName=''; state.editNote=''; state.isEditing=false;
-            state.activeColorIdx = (state.activeColorIdx + 1) % COLORS.length;
-            render();
-        }
-        function toDock(id) {
-            const t = state.tasks.find(x => x.id == id);
-            if(t) t.hour = null;
-            state.activeModalTask = null;
-            render();
-        }
-
-        render();
-    </script>
+    initGrid();
+</script>
 </body>
 </html>
